@@ -53,7 +53,17 @@ function isConfigured() {
 let cachedSheet = null;
 
 async function getSheet() {
-  if (cachedSheet) return cachedSheet;
+  if (cachedSheet) {
+    // Header dibaca ulang di setiap request. Kalau tidak, container yang masih
+    // "hangat" akan memakai header lama, sehingga kolom yang baru ditambahkan
+    // manual di spreadsheet (misalnya "Diteruskan Kepada") tidak ikut tersimpan.
+    try {
+      await cachedSheet.loadHeaderRow();
+    } catch (err) {
+      console.error("[sheets] Gagal membaca ulang header:", err.message);
+    }
+    return cachedSheet;
+  }
 
   const creds = getServiceAccountCredentials();
   if (!creds || !process.env.GOOGLE_SHEET_ID) return null;
@@ -86,6 +96,26 @@ async function getSheet() {
   return sheet;
 }
 
+// Teks yang diawali = + - @ akan dibaca Google Sheets sebagai rumus (misal
+// "- rapat" jadi error #NAME?). Tanda kutip di depan membuatnya tampil sebagai teks biasa.
+function safeCell(value) {
+  const s = value == null ? "" : String(value);
+  return /^[=+\-@]/.test(s) ? `'${s}` : s;
+}
+
+// Hanya kirim kolom yang benar-benar ada di sheet. Kolom yang belum dibuat
+// (misal header baru belum ditambahkan manual) dilewati dengan peringatan,
+// supaya sinkronisasi kolom lain tetap berjalan.
+function keepKnownColumns(sheet, values) {
+  const known = new Set(sheet.headerValues || []);
+  const result = {};
+  for (const [key, val] of Object.entries(values)) {
+    if (known.has(key)) result[key] = val;
+    else console.warn(`[sheets] Kolom "${key}" belum ada di spreadsheet — tambahkan header ini di baris pertama sheet "${SHEET_TITLE}".`);
+  }
+  return result;
+}
+
 function rowValuesFromItem(item, siteUrl) {
   const attachments = item.attachments || [];
   let dokumenValue = "";
@@ -105,15 +135,15 @@ function rowValuesFromItem(item, siteUrl) {
 
   return {
     ID: String(item.id),
-    Tanggal: item.tanggal,
-    Jam: item.jam,
-    "Asal Surat": item.asalSurat,
-    Keterangan: item.keterangan,
-    Disposisi: (item.tags || []).join(", "),
-    "No. Disposisi": item.noDisposisi || "",
-    "No. Surat": item.noSurat || "",
-    Dokumen: dokumenValue,
-    "Diteruskan Kepada": (item.diteruskanKepada || []).join(", "),
+    Tanggal: safeCell(item.tanggal),
+    Jam: safeCell(item.jam),
+    "Asal Surat": safeCell(item.asalSurat),
+    Keterangan: safeCell(item.keterangan),
+    Disposisi: safeCell((item.tags || []).join(", ")),
+    "No. Disposisi": safeCell(item.noDisposisi),
+    "No. Surat": safeCell(item.noSurat),
+    Dokumen: dokumenValue, // sengaja berupa rumus HYPERLINK
+    "Diteruskan Kepada": safeCell((item.diteruskanKepada || []).join(", ")),
   };
 }
 
@@ -135,7 +165,7 @@ async function insertAgendaRow(item, siteUrl) {
     const sheet = await getSheet();
     if (!sheet) return;
 
-    await sheet.addRow(rowValuesFromItem(item, siteUrl));
+    await sheet.addRow(keepKnownColumns(sheet, rowValuesFromItem(item, siteUrl)));
     console.log(`[sheets] Baris agenda #${item.id} berhasil ditambahkan.`);
   } catch (err) {
     console.error("[sheets] Gagal sinkron ke Google Sheets:", err.message);
@@ -155,7 +185,7 @@ async function upsertAgendaRow(item, siteUrl) {
 
     const rows = await sheet.getRows();
     const existing = rows.find((r) => r.get("ID") === String(item.id));
-    const values = rowValuesFromItem(item, siteUrl);
+    const values = keepKnownColumns(sheet, rowValuesFromItem(item, siteUrl));
 
     if (existing) {
       Object.entries(values).forEach(([key, val]) => existing.set(key, val));

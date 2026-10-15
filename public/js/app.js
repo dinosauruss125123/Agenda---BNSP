@@ -800,18 +800,11 @@ document.getElementById("todayBtn").addEventListener("click", () => {
 
 // ---------- Klik tanggal -> buka kalender native (bisa loncat bulan/tahun langsung) ----------
 (function setupDatePicker() {
-  const labelBtn = document.getElementById("dateLabel");
   const picker = document.getElementById("dailyDatePicker");
 
-  labelBtn.addEventListener("click", () => {
-    picker.value = fmtDate(state.currentDate); // buka kalender langsung di tanggal yang lagi aktif
-    if (typeof picker.showPicker === "function") {
-      picker.showPicker();
-    } else {
-      // Browser lama yang belum dukung showPicker() — fallback andalkan interaksi native input-nya sendiri
-      picker.focus();
-      picker.click();
-    }
+  // Samakan nilai input dengan tanggal yang sedang aktif, tepat sebelum kalender dibuka
+  picker.addEventListener("pointerdown", () => {
+    picker.value = fmtDate(state.currentDate);
   });
 
   picker.addEventListener("change", () => {

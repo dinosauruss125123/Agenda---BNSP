@@ -159,11 +159,13 @@
       <div id="dailyViewWrap">
         <div class="date-nav">
           <button id="prevDay" class="ghost-btn" title="Hari sebelumnya">‹</button>
-          <button id="dateLabel" class="date-label" title="Klik untuk memilih tanggal langsung">
-            <span id="dateLabelText"></span>
-            <span class="date-label-icon">📅</span>
-          </button>
-          <input type="date" id="dailyDatePicker" class="date-picker-hidden" aria-hidden="true" tabindex="-1" />
+          <div class="date-label-wrap">
+            <button type="button" id="dateLabel" class="date-label" tabindex="-1" aria-hidden="true">
+              <span id="dateLabelText"></span>
+              <span class="date-label-icon">📅</span>
+            </button>
+            <input type="date" id="dailyDatePicker" class="date-picker-overlay" title="Pilih tanggal" aria-label="Pilih tanggal" />
+          </div>
           <button id="nextDay" class="ghost-btn" title="Hari berikutnya">›</button>
           <button id="todayBtn" class="ghost-btn">Hari Ini</button>
         </div>

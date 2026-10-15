@@ -94,16 +94,14 @@ body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: va
 .date-label:hover { background: #f1f5fb; border-color: var(--blue); }
 .date-label-icon { font-size: 14px; opacity: 0.7; }
 
-/* Input tanggal asli disembunyikan secara visual tapi tetap berfungsi penuh —
-   dipicu lewat showPicker() saat tombol tanggal di atas diklik, supaya
-   kalender loncat-tahun/bulan bawaan browser bisa dipakai tanpa perlu
-   bikin komponen kalender sendiri dari nol. */
-.date-picker-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  pointer-events: none;
+/* Tombol tanggal dibungkus, dan input tanggal asli transparan menutupi seluruh tombol.
+   Sentuhan langsung mengenai input asli, jadi kalender native selalu terbuka di HP
+   (iOS Safari & Android), tanpa bergantung pada showPicker(). */
+.date-label-wrap { position: relative; display: inline-flex; min-width: 0; }
+.date-picker-overlay {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  opacity: 0; cursor: pointer; margin: 0; padding: 0; border: 0;
+  font-size: 16px; -webkit-appearance: none; appearance: none;
 }
 
 .date-group { margin-bottom: 26px; }
@@ -158,11 +156,13 @@ body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: va
 
 /* ---------- MODAL ---------- */
 .modal-backdrop { position: fixed; inset: 0; background: rgba(15,23,42,0.45); display: flex; align-items: center; justify-content: center; z-index: 50; }
-.modal-card { background: #fff; border-radius: 12px; padding: 24px; width: 420px; max-width: 92vw; max-height: 90vh; overflow-y: auto; }
+.modal-card { background: #fff; border-radius: 12px; padding: 24px; width: 420px; max-width: 92vw; max-height: 90vh; overflow-y: auto; overflow-x: hidden; min-width: 0; }
 .modal-card h3 { margin-top: 0; color: var(--blue-dark); }
 .modal-card label { display: block; font-size: 13px; color: var(--text-mute); margin: 10px 0 4px; }
 .modal-card input, .modal-card textarea { width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 7px; font-size: 14px; }
 .modal-card textarea { min-height: 70px; resize: vertical; }
+.modal-card input[type="date"], .modal-card input[type="time"] { display: block; min-width: 0; max-width: 100%; -webkit-appearance: none; appearance: none; font-size: 16px; }
+.modal-card input { min-width: 0; font-size: 16px; }
 
 .modal-card .recipient-hint { font-size: 12px; color: var(--text-mute); margin: 2px 0 0; }
 .modal-card .recipient-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
